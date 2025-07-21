@@ -1,0 +1,36 @@
+#!/bin/bash
+
+if ! ${FIG_DEFINED:-false} ; then
+    exec "$(dirname "$(readlink -f "${0}")")/fig.sh" ${0} ${@}
+fi
+
+fig_parser_begin "main"
+fig_parser_add_opt option "t,test" "Just a test flag Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+fig_parser_add_opt flag "a" "another test flag"
+fig_parser_add_opt flag "link-clangd" "setup .clangd"
+fig_parser_end
+
+main() {
+    fig_assert "meson"
+
+    #echo "Source: ${SRC_DIR}"
+    #echo "Source: ${SRC_DIR_RELATIVE}"
+    #echo "Build: ${BUILD_DIR}"
+    #echo ${@}
+
+    #print_help_main
+
+    parse_opts_main $@
+
+    if ${OPT_main_test_set} ; then
+        fig_log "Test is set!!"
+    else
+        fig_log "Test is not set!!"
+    fi
+}
+
+fig_export fig_log
+fig_export fig_log
+
+fig_generate "configure"
+
