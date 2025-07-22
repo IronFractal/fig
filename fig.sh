@@ -155,6 +155,7 @@ fig_parser_begin() {
     __FIG_PARSER_SHORT="h"
     __FIG_PARSER_LONG="help,"
     __FIG_PARSER_ENV=false
+    __FIG_PARSER_ENV_DEFAULTS=""
     __FIG_PARSER_USAGE=true
     __FIG_PARSER_DESC=""
     __FIG_PARSER_PRE=""
@@ -289,8 +290,22 @@ OPT_${__FIG_PARSER}_${PRIMARY}=${DEFAULT}
 }
 
 fig_parser_add_env() {
-    local NAME="${1}"
-    local DEFAULT="${2}"
+    local NAME="$(echo "${1}" | tr '=' ' ' | awk '{print $1}')"
+    local DEFAULT="$(echo "${1}" | tr '=' ' ' | awk '{print $2}')"
+    local DESC="${2}"
+    local HELP="<value>"
+
+    __FIG_PARSER_ENV=true
+
+    if [ -n "${DEFAULT}" ] ; then
+        HELP="[value] (default: \\\"${DEFAULT}\\\")"
+        __FIG_PARSER_ENV_DEFAULTS+="""${NAME}=\"\${${NAME}:-\"${DEFAULT}\"}\"
+"""
+    fi
+
+    __FIG_PARSER_HELP_ENV+="""  ${NAME}=${HELP}
+$(echo "${DESC}" | fold -w 76 -s - | sed 's/[[:space:]]*$//' | sed 's/^/    /')
+"""
 }
 
 fig_parser_end() {
@@ -312,7 +327,12 @@ print_help_${__FIG_PARSER} () {
 
 """
     fi
-    __FIG_SCRIPT+="""${__FIG_PARSER_HELP}\"\"\"
+    __FIG_SCRIPT+="""$(echo "${__FIG_PARSER_HELP}" | sed 's/^\n$//')"""
+    if ${__FIG_PARSER_ENV} ; then
+        __FIG_SCRIPT+="""
+$(echo "${__FIG_PARSER_HELP_ENV}" | sed 's/^\n$//')"""
+    fi
+    __FIG_SCRIPT+="""\"\"\"
 }
 """
     __FIG_SCRIPT+="""

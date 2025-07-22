@@ -10,6 +10,7 @@ fig_parser_add_opt flag "a" "another test flag"
 fig_parser_add_opt flag "link-clangd" "setup .clangd"
 fig_parser_add_opt option "o=hello" "world"
 fig_parser_add_opt array "arr" "test array"
+fig_parser_add_env "ENV_TEST=hi" "just a random test environment variable"
 fig_parser_end
 
 main() {
