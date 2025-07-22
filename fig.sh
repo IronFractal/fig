@@ -314,7 +314,8 @@ fig_parser_end() {
         return 1
     fi
     __FIG_SCRIPT+="""
-print_help_${__FIG_PARSER} () {
+print_help_${__FIG_PARSER} ()
+{
     echo \"\"\""""
     if ${__FIG_PARSER_USAGE} ; then
         __FIG_SCRIPT+="""Usage:
@@ -336,7 +337,8 @@ $(echo "${__FIG_PARSER_HELP_ENV}" | sed 's/^\n$//')"""
 }
 """
     __FIG_SCRIPT+="""
-parse_opts_${__FIG_PARSER} () {
+parse_opts_${__FIG_PARSER} ()
+{
     local ERR=\$(getopt -Q -o ${__FIG_PARSER_SHORT} --long ${__FIG_PARSER_LONG} -- \"\$@\" 2>&1)
     local ARGS=\$(getopt -q -o ${__FIG_PARSER_SHORT} --long ${__FIG_PARSER_LONG} -- \"\$@\")
     eval set -- \"\${ARGS}\"
