@@ -180,106 +180,112 @@ fig_parser_set_description() {
     __FIG_PARSER_DESC="${1}"
 }
 
-# TODO: rewrite this aweful function
-# 1. reusing "SHORT" in the case of only a long option
-# 2. maybe try to refactor in a way to reduce duplicate code?
-#   - use case statement to determine what to set the variable to
-#     and if the option takes an argument (required / optional / no)
 fig_parser_add_opt() {
     if [ -z "${__FIG_PARSER}" ] ; then
         fig_log_err "no active parser, did you forget to call fig_parser_begin!"
         return 1
     fi
     local TYPE="${1}"
-    local SHORT_PRE="-"
-    local SHORT="$(echo ${2} | tr ',' ' ' | awk '{print $1}')"
-    local LONG="$(echo ${2} | tr ',' ' ' | awk '{print $2}')"
-    local SHORT_US="$(echo ${SHORT} | tr '-' '_')"
-    local LONG_US="$(echo ${LONG} | tr '_' '_')"
+    local ARG="none"
+    local VALUE=""
+    local DEFAULT="$(echo "${2}" | tr '=' ' ' | awk '{print $2}')"
+    local FLAGS="$(echo "${2}" | tr '=' ' ' | awk '{print $1}')"
+    local SHORT="$(echo "${FLAGS}" | tr ',' ' ' | awk '{print $1}')"
+    local LONG="$(echo "${FLAGS}" | tr ',' ' ' | awk '{print $2}')"
+    local SHORT_US="$(echo "${SHORT}" | tr '-' '_')"
+    local LONG_US="$(echo "${LONG}" | tr '-' '_')"
+    local PRIMARY="${LONG_US}"
     local DESC="${3}"
-    local DEFAULT="${4}"
-    local ISLONG=false
+    local CASE=""
+    local SHIFT=""
+    local HELP="  "
+    local GETOPTARG=""
 
-    # a bit of a hacky way to support specifying only short / long
     if [ "$(echo -n "${SHORT}" | wc -c)" -gt 1 ] ; then
-        SHORT_PRE="--"
-        ISLONG=true
         if [ -n "${LONG}" ] ; then
             fig_log_err "invalid short option '${SHORT}' provided!"
             return 1
         fi
+        LONG="${SHORT}"
+        LONG_US="${SHORT_US}"
+        PRIMARY="${SHORT_US}"
+        SHORT=""
+        SHORT_US=""
+    fi
+
+    if [ -z "${LONG_US}" ] ; then
+        PRIMARY="${SHORT_US}"
     fi
 
     case "${TYPE}" in
         flag)
-            if ${ISLONG} ; then
-                __FIG_PARSER_LONG+="${SHORT},"
-            else
-                __FIG_PARSER_SHORT+="${SHORT}"
-            fi
-            if [ -n "${LONG}" ] ; then
-                __FIG_PARSER_LONG+="${LONG},"
-                __FIG_PARSER_CASE+="""-${SHORT}|--${LONG})
-    OPT_${__FIG_PARSER}_${LONG_US}_set=true
-    OPT_${__FIG_PARSER}_${LONG_US}=true
-    shift
-    ;;
-"""
-                __FIG_PARSER_HELP+="  -${SHORT}, --${LONG}"
-                __FIG_PARSER_PRE+="""OPT_${__FIG_PARSER}_${LONG_US}_set=false
-OPT_${__FIG_PARSER}_${LONG_US}=false
-"""
-            else
-                __FIG_PARSER_CASE+="""${SHORT_PRE}${SHORT})
-    OPT_${__FIG_PARSER}_${SHORT_US}_set=true
-    OPT_${__FIG_PARSER}_${SHORT_US}=true
-    shift
-    ;;
-"""
-                __FIG_PARSER_HELP+="  ${SHORT_PRE}${SHORT}"
-                __FIG_PARSER_PRE+="""OPT_${__FIG_PARSER}_${SHORT_US}_set=false
-OPT_${__FIG_PARSER}_${SHORT_US}=false
-"""
-            fi
-            __FIG_PARSER_HELP+="""
-$(echo "${DESC}" | fold -w 76 -s - | sed 's/[[:space:]]*$//' | sed 's/^/    /')
-"""
+            VALUE="=true"
+            DEFAULT="false"
             ;;
         option)
-            if ${ISLONG} ; then
-                __FIG_PARSER_LONG+="${SHORT}:,"
-            else
-                __FIG_PARSER_SHORT+="${SHORT}:"
-            fi
-            if [ -n "${LONG}" ] ; then
-                __FIG_PARSER_LONG+="${LONG}:,"
-                __FIG_PARSER_CASE+="""-${SHORT}|--${LONG})
-    OPT_${__FIG_PARSER}_${LONG_US}_set=true
-    OPT_${__FIG_PARSER}_${LONG_US}=\"\${2}\"
-    shift 2
-    ;;
-"""
-                __FIG_PARSER_HELP+="  -${SHORT}, --${LONG} <argument>"
-                __FIG_PARSER_PRE+="""OPT_${__FIG_PARSER}_${LONG_US}_set=false
-OPT_${__FIG_PARSER}_${LONG_US}=\"${DEFAULT}\"
-"""
-            else
-                __FIG_PARSER_CASE+="""${SHORT_PRE}${SHORT})
-    OPT_${__FIG_PARSER}_${SHORT_US}_set=true
-    OPT_${__FIG_PARSER}_${SHORT_US}=\"\${2}\"
-    shift 2
-    ;;
-"""
-                __FIG_PARSER_HELP+="  ${SHORT_PRE}${SHORT} <argument>"
-                __FIG_PARSER_PRE+="""OPT_${__FIG_PARSER}_${SHORT_US}_set=false
-OPT_${__FIG_PARSER}_${SHORT_US}=\"${DEFAULT}\"
-"""
-            fi
-            __FIG_PARSER_HELP+="""
-$(echo "${DESC}" | fold -w 76 -s - | sed 's/[[:space:]]*$//' | sed 's/^/    /')
-"""
+            ARG="required"
+            VALUE="=\"\${2}\""
+            DEFAULT="\"${DEFAULT:-""}\""
+            ;;
+        array)
+            ARG="required"
+            VALUE="+=\" \${2} \""
+            DEFAULT="\"${DEFAULT:-""}\""
+            ;;
+        *)
+            fig_log_err "unknown option type '${TYPE}'!"
+            return 1
             ;;
     esac
+
+    case "${ARG}" in
+        none)
+            ;;
+        required)
+            GETOPTARG=":"
+            SHIFT=" 2"
+            ;;
+        optional)
+            GETOPTARG="::"
+            SHIFT=" 2"
+            ;;
+    esac
+
+    if [ -n "${SHORT}" ] ; then
+        __FIG_PARSER_SHORT+="${SHORT}${GETOPTARG}"
+        CASE="-${SHORT}"
+        HELP+="-${SHORT}"
+    fi
+    if [ -n "${LONG}" ] ; then
+        __FIG_PARSER_LONG+="${LONG}${GETOPTARG},"
+        if [ -n "${SHORT}" ] ; then
+            CASE+="|"
+            HELP+=", "
+        fi
+        CASE+="--${LONG}"
+        HELP+="--${LONG}"
+    fi
+
+    if [ "${ARG}" == "required" ] ; then
+        HELP+=" <argument>"
+    elif [ "${ARG}" == "optional" ] ; then
+        HELP+=" [argument]"
+    fi
+
+    __FIG_PARSER_HELP+="""${HELP}
+$(echo "${DESC}" | fold -w 76 -s - | sed 's/[[:space:]]*$//' | sed 's/^/    /')
+"""
+
+    __FIG_PARSER_PRE+="""OPT_${__FIG_PARSER}_${PRIMARY}_set=false
+OPT_${__FIG_PARSER}_${PRIMARY}=${DEFAULT}
+"""
+
+    __FIG_PARSER_CASE+="""${CASE})
+    OPT_${__FIG_PARSER}_${PRIMARY}_set=true
+    OPT_${__FIG_PARSER}_${PRIMARY}${VALUE}
+    shift${SHIFT}
+    ;;
+"""
 }
 
 fig_parser_add_env() {

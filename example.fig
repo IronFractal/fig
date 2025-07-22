@@ -8,6 +8,8 @@ fig_parser_begin "main"
 fig_parser_add_opt option "t,test" "Just a test flag Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
 fig_parser_add_opt flag "a" "another test flag"
 fig_parser_add_opt flag "link-clangd" "setup .clangd"
+fig_parser_add_opt option "o=hello" "world"
+fig_parser_add_opt array "arr" "test array"
 fig_parser_end
 
 main() {
@@ -27,6 +29,10 @@ main() {
     else
         fig_log "Test is not set!!"
     fi
+
+    for i in ${OPT_main_arr} ; do
+        fig_log "${i}"
+    done
 }
 
 fig_export fig_log
