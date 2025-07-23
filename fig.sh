@@ -75,7 +75,11 @@ fig_log_err() {
 }
 
 fig_get_script_path() {
-    echo "$(realpath -m --relative-to=${__FIG_SCRIPT_DIR} ${1})"
+    if [[ " ${1} " =~ ^/.* ]] ; then
+        echo "${1}"
+    else
+        echo "$(realpath ${__FIG_SCRIPT_DIR}/${1})"
+    fi
 }
 
 fig_generate() {
