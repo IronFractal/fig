@@ -1,0 +1,11 @@
+#!/usr/bin/env fig.sh
+OUTDIR="${1:-.}"
+
+main() {
+    fig_log 'Hello World!!'
+}
+
+fig_export fig_log
+
+fig_generate "${OUTDIR}/simple.sh"
+

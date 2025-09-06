@@ -1,8 +1,5 @@
-#!/bin/bash
-
-if ! ${FIG_DEFINED:-false} ; then
-    exec "$(dirname "$(readlink -f "${0}")")/fig.sh" ${0} ${@}
-fi
+#!/usr/bin/env fig.sh
+OUTDIR="${1:-.}"
 
 fig_parser_begin "main"
 fig_parser_add_opt option "t,test" "Just a test flag Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
@@ -39,5 +36,5 @@ main() {
 fig_export fig_log
 fig_export fig_log
 
-fig_generate "configure"
+fig_generate "${OUTDIR}/example.sh"
 

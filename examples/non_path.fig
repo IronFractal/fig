@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if ! ${FIG_DEFINED:-false} ; then
+    exec "$(dirname "$(readlink -f "${0}")")/../fig.sh" ${0} ${@}
+fi
+
+OUTDIR="${1:-.}"
+
+main() {
+    fig_log 'Hello World!!'
+}
+
+fig_export fig_log
+
+fig_generate "${OUTDIR}/non_path.sh"
+
