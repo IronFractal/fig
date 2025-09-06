@@ -42,6 +42,7 @@
 #
 set -e
 
+# shellcheck disable=SC2034
 FIG_DEFINED=true
 
 __FIG_SRC_SCRIPT="${1}"
@@ -49,7 +50,7 @@ shift
 
 __FIG_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 __FIG_SCRIPT_DIR="$(cd -- "$(dirname -- "${__FIG_SRC_SCRIPT}")" &> /dev/null && pwd)"
-__FIG_SCRIPT="""#!/bin/bash
+__FIG_SCRIPT="#!/bin/bash
 # THIS IS A GENERATED SCRIPT (DO NOT EDIT)!!
 # Source: ${__FIG_SRC_SCRIPT}
 set -e
@@ -57,7 +58,7 @@ set -e
 SRC_DIR=\"\$(cd -- \"\$(dirname -- \"\${BASH_SOURCE[0]}\")\" &> /dev/null && pwd)\"
 SRC_DIR_RELATIVE=\"\$(realpath --relative-to=\$(pwd) \"\${SRC_DIR}\")\"
 BUILD_DIR=\"\$(pwd)\"
-"""
+"
 __FIG_EXPORTED=""
 
 __FIG_PARSER=""
@@ -81,13 +82,15 @@ fig_get_script_path() {
     if [[ " ${1} " =~ ^\ /.* ]] ; then
         echo "${1}"
     else
-        echo "$(realpath ${__FIG_SCRIPT_DIR}/${1})"
+        realpath "${__FIG_SCRIPT_DIR}"/"${1}"
     fi
 }
 
 fig_generate() {
-    local SCRIPT_NAME="$(basename ${1})"
-    local SCRIPT_PATH="$(fig_get_script_path ${1})"
+    local SCRIPT_NAME
+    local SCRIPT_PATH
+    SCRIPT_NAME="$(basename "${1}")"
+    SCRIPT_PATH="$(fig_get_script_path "${1}")"
     if [ -z "${SCRIPT_NAME}" ] ; then
         fig_log_err "configure script name cannot be empty!"
         return 1
@@ -96,33 +99,33 @@ fig_generate() {
         return 1
     fi
     fig_export main
-    mkdir -p "$(dirname ${SCRIPT_PATH})"
-    echo "${__FIG_SCRIPT}" > ${SCRIPT_PATH}
-    echo "main \${@}" >> ${SCRIPT_PATH}
-    echo "" >> ${SCRIPT_PATH}
-    chmod +x ${SCRIPT_PATH}
+    mkdir -p "$(dirname "${SCRIPT_PATH}")"
+    echo "${__FIG_SCRIPT}" > "${SCRIPT_PATH}"
+    echo "main \${@}" >> "${SCRIPT_PATH}"
+    echo "" >> "${SCRIPT_PATH}"
+    chmod +x "${SCRIPT_PATH}"
 }
 
 fig_export() {
-    if [[ " ${__FIG_EXPORTED} " =~ " ${1} " ]] ; then
+    if [[ " ${__FIG_EXPORTED} " =~ ${1} ]] ; then
         return 0
     fi
-    if [ -z "$(type -t ${1})" ] ; then
+    if [ -z "$(type -t "${1}")" ] ; then
         fig_log_err "function '${1}' does not exist!"
         return 1
     fi
-    if [ "$(type -t ${1})" != "function" ] ; then
+    if [ "$(type -t "${1}")" != "function" ] ; then
         fig_log_err "'${1}' is not a function!"
         return 1
     fi
     __FIG_EXPORTED+=" ${1} "
-    __FIG_SCRIPT="""${__FIG_SCRIPT}
+    __FIG_SCRIPT="${__FIG_SCRIPT}
 $(declare -f "${1}" | sed 's/[[:space:]]*$//')
-"""
+"
 }
 
 fig_assert() {
-    if ! which ${1} &>/dev/null ; then
+    if ! which "${1}" &>/dev/null ; then
         fig_log_err "command '${1}' is not available!"
         return 1
     fi
@@ -135,8 +138,8 @@ fig_assert_qq() {
 
 fig_assert_one() {
     local CHECKED=""
-    for cmd in ${@} ; do
-        if which ${cmd} &>/dev/null ; then
+    for cmd in "${@}" ; do
+        if which "${cmd}" &>/dev/null ; then
             echo "${cmd}"
             return 0
         fi
@@ -167,13 +170,13 @@ fig_parser_begin() {
     __FIG_PARSER_DESC=""
     __FIG_PARSER_PRE=""
     __FIG_PARSER_CASE=""
-    __FIG_PARSER_HELP="""Options:
+    __FIG_PARSER_HELP='Options:
   -h, --help
     Print this help information
-"""
-    __FIG_PARSER_HELP_ENV="""
+'
+    __FIG_PARSER_HELP_ENV='
 Environment:
-"""
+'
 }
 
 fig_parser_enable_usage() {
@@ -193,21 +196,23 @@ fig_parser_add_opt() {
         fig_log_err "no active parser, did you forget to call fig_parser_begin!"
         return 1
     fi
-    local TYPE="${1}"
-    local ARG="none"
-    local VALUE=""
-    local DEFAULT="$(echo "${2}" | tr '=' ' ' | awk '{print $2}')"
-    local FLAGS="$(echo "${2}" | tr '=' ' ' | awk '{print $1}')"
-    local SHORT="$(echo "${FLAGS}" | tr ',' ' ' | awk '{print $1}')"
-    local LONG="$(echo "${FLAGS}" | tr ',' ' ' | awk '{print $2}')"
-    local SHORT_US="$(echo "${SHORT}" | tr '-' '_')"
-    local LONG_US="$(echo "${LONG}" | tr '-' '_')"
-    local PRIMARY="${LONG_US}"
-    local DESC="${3}"
-    local CASE=""
-    local SHIFT=""
-    local HELP="  "
-    local GETOPTARG=""
+    local TYPE ARG VALUE DEFAULT FLAGS SHORT LONG SHORT_US LONG_US PRIMARY \
+          DESC CASE SHIFT HELP GETOPTARG
+    TYPE="${1}"
+    ARG="none"
+    VALUE=""
+    DEFAULT="$(echo "${2}" | tr '=' ' ' | awk '{print $2}')"
+    FLAGS="$(echo "${2}" | tr '=' ' ' | awk '{print $1}')"
+    SHORT="$(echo "${FLAGS}" | tr ',' ' ' | awk '{print $1}')"
+    LONG="$(echo "${FLAGS}" | tr ',' ' ' | awk '{print $2}')"
+    SHORT_US="$(echo "${SHORT}" | tr '-' '_')"
+    LONG_US="$(echo "${LONG}" | tr '-' '_')"
+    PRIMARY="${LONG_US}"
+    DESC="${3}"
+    CASE=""
+    SHIFT=""
+    HELP="  "
+    GETOPTARG=""
 
     if [ "$(echo -n "${SHORT}" | wc -c)" -gt 1 ] ; then
         if [ -n "${LONG}" ] ; then
@@ -280,39 +285,40 @@ fig_parser_add_opt() {
         HELP+=" [argument]"
     fi
 
-    __FIG_PARSER_HELP+="""${HELP}
+    __FIG_PARSER_HELP+="${HELP}
 $(echo "${DESC}" | fold -w 76 -s - | sed 's/[[:space:]]*$//' | sed 's/^/    /')
-"""
+"
 
-    __FIG_PARSER_PRE+="""OPT_${__FIG_PARSER}_${PRIMARY}_set=false
+    __FIG_PARSER_PRE+="OPT_${__FIG_PARSER}_${PRIMARY}_set=false
 OPT_${__FIG_PARSER}_${PRIMARY}=${DEFAULT}
-"""
+"
 
-    __FIG_PARSER_CASE+="""${CASE})
+    __FIG_PARSER_CASE+="${CASE})
     OPT_${__FIG_PARSER}_${PRIMARY}_set=true
     OPT_${__FIG_PARSER}_${PRIMARY}${VALUE}
     shift${SHIFT}
     ;;
-"""
+"
 }
 
 fig_parser_add_env() {
-    local NAME="$(echo "${1}" | tr '=' ' ' | awk '{print $1}')"
-    local DEFAULT="$(echo "${1}" | tr '=' ' ' | awk '{print $2}')"
-    local DESC="${2}"
-    local HELP="<value>"
+    local NAME DEFAULT DESC HELP
+    NAME="$(echo "${1}" | tr '=' ' ' | awk '{print $1}')"
+    DEFAULT="$(echo "${1}" | tr '=' ' ' | awk '{print $2}')"
+    DESC="${2}"
+    HELP="<value>"
 
     __FIG_PARSER_ENV=true
 
     if [ -n "${DEFAULT}" ] ; then
         HELP="[value] (default: \\\"${DEFAULT}\\\")"
-        __FIG_PARSER_ENV_DEFAULTS+="""${NAME}=\"\${${NAME}:-\"${DEFAULT}\"}\"
-"""
+        __FIG_PARSER_ENV_DEFAULTS+="${NAME}=\"\${${NAME}:-\"${DEFAULT}\"}\"
+"
     fi
 
-    __FIG_PARSER_HELP_ENV+="""  ${NAME}=${HELP}
+    __FIG_PARSER_HELP_ENV+="  ${NAME}=${HELP}
 $(echo "${DESC}" | fold -w 76 -s - | sed 's/[[:space:]]*$//' | sed 's/^/    /')
-"""
+"
 }
 
 fig_parser_end() {
@@ -320,30 +326,30 @@ fig_parser_end() {
         fig_log_err "no active parser, did you forget to call fig_parser_begin!"
         return 1
     fi
-    __FIG_SCRIPT+="""
+    __FIG_SCRIPT+="
 print_help_${__FIG_PARSER} ()
 {
-    echo \"\"\""""
+    echo \""
     if ${__FIG_PARSER_USAGE} ; then
-        __FIG_SCRIPT+="""Usage:
+        __FIG_SCRIPT+="Usage:
   \${0} [options]
 
-"""
+"
     fi
     if [ -n "${__FIG_PARSER_DESC}" ] ; then
-        __FIG_SCRIPT+="""    ${__FIG_PARSER_DESC}
+        __FIG_SCRIPT+="    ${__FIG_PARSER_DESC}
 
-"""
+"
     fi
-    __FIG_SCRIPT+="""$(echo "${__FIG_PARSER_HELP}" | sed 's/^\n$//')"""
+    __FIG_SCRIPT+="${__FIG_PARSER_HELP//^\n$/}"
     if ${__FIG_PARSER_ENV} ; then
-        __FIG_SCRIPT+="""
-$(echo "${__FIG_PARSER_HELP_ENV}" | sed 's/^\n$//')"""
+        __FIG_SCRIPT+="
+${__FIG_PARSER_HELP_ENV//^\n$/}"
     fi
-    __FIG_SCRIPT+="""\"\"\"
+    __FIG_SCRIPT+="\"
 }
-"""
-    __FIG_SCRIPT+="""
+"
+    __FIG_SCRIPT+="
 parse_opts_${__FIG_PARSER} ()
 {
     local ERR=\$(getopt -Q -o ${__FIG_PARSER_SHORT} --long ${__FIG_PARSER_LONG} -- \"\$@\" 2>&1)
@@ -382,7 +388,7 @@ $(echo "${__FIG_PARSER_CASE}" | sed 's/^/            /' | sed 's/^[[:space:]]*$/
         return 1
     fi
 }
-"""
+"
 }
 
 fig_assert sed
@@ -394,5 +400,6 @@ fig_export fig_assert_qq
 fig_export fig_assert_one_q
 fig_export fig_assert_one_qq
 
-. ${__FIG_SRC_SCRIPT}
+# shellcheck disable=SC1090
+. "${__FIG_SRC_SCRIPT}"
 
