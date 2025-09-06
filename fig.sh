@@ -44,11 +44,14 @@ set -e
 
 FIG_DEFINED=true
 
+__FIG_SRC_SCRIPT="${1}"
+shift
+
 __FIG_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
-__FIG_SCRIPT_DIR="$(cd -- "$(dirname -- "${1}")" &> /dev/null && pwd)"
+__FIG_SCRIPT_DIR="$(cd -- "$(dirname -- "${__FIG_SRC_SCRIPT}")" &> /dev/null && pwd)"
 __FIG_SCRIPT="""#!/bin/bash
 # THIS IS A GENERATED SCRIPT (DO NOT EDIT)!!
-# Source: ${1}
+# Source: ${__FIG_SRC_SCRIPT}
 set -e
 
 SRC_DIR=\"\$(cd -- \"\$(dirname -- \"\${BASH_SOURCE[0]}\")\" &> /dev/null && pwd)\"
@@ -75,7 +78,7 @@ fig_log_err() {
 }
 
 fig_get_script_path() {
-    if [[ " ${1} " =~ ^/.* ]] ; then
+    if [[ " ${1} " =~ ^\ /.* ]] ; then
         echo "${1}"
     else
         echo "$(realpath ${__FIG_SCRIPT_DIR}/${1})"
@@ -391,5 +394,5 @@ fig_export fig_assert_qq
 fig_export fig_assert_one_q
 fig_export fig_assert_one_qq
 
-. ${1}
+. ${__FIG_SRC_SCRIPT}
 
