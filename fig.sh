@@ -48,6 +48,10 @@ FIG_DEFINED=true
 __FIG_SRC_SCRIPT="${1}"
 shift
 
+###############################################################################
+# CORE
+###############################################################################
+
 __FIG_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 __FIG_SCRIPT_DIR="$(cd -- "$(dirname -- "${__FIG_SRC_SCRIPT}")" &> /dev/null && pwd)"
 __FIG_SCRIPT="#!/bin/bash
@@ -60,15 +64,6 @@ SRC_DIR_RELATIVE=\"\$(realpath --relative-to=\$(pwd) \"\${SRC_DIR}\")\"
 BUILD_DIR=\"\$(pwd)\"
 "
 __FIG_EXPORTED=""
-
-__FIG_PARSER=""
-__FIG_PARSER_SHORT=""
-__FIG_PARSER_LONG=""
-__FIG_PARSER_ENV=false
-__FIG_PARSER_USAGE=true
-__FIG_PARSER_DESC=""
-__FIG_PARSER_HELP=""
-__FIG_PARSER_HELP_ENV=""
 
 fig_log() {
     echo "${1}"
@@ -107,7 +102,7 @@ fig_generate() {
 }
 
 fig_export() {
-    if [[ " ${__FIG_EXPORTED} " =~ ${1} ]] ; then
+    if [[ " ${__FIG_EXPORTED} " =~ ( )${1}( ) ]] ; then
         return 0
     fi
     if [ -z "$(type -t "${1}")" ] ; then
@@ -156,6 +151,19 @@ fig_assert_one_q() {
 fig_assert_one_qq() {
     fig_assert_one "${@}" &>/dev/null
 }
+
+###############################################################################
+# ARG PARSING
+###############################################################################
+
+__FIG_PARSER=""
+__FIG_PARSER_SHORT=""
+__FIG_PARSER_LONG=""
+__FIG_PARSER_ENV=false
+__FIG_PARSER_USAGE=true
+__FIG_PARSER_DESC=""
+__FIG_PARSER_HELP=""
+__FIG_PARSER_HELP_ENV=""
 
 fig_parser_begin() {
     fig_assert fold
@@ -390,6 +398,306 @@ $(echo "${__FIG_PARSER_CASE}" | sed 's/^/            /' | sed 's/^[[:space:]]*$/
 }
 "
 }
+
+###############################################################################
+# ANSI
+###############################################################################
+
+fig_ansi_cursor_hide() {
+    printf '\e[?25l'
+}
+
+fig_ansi_cursor_show() {
+    printf '\e[?25h'
+}
+
+fig_ansi_cursor_home() {
+    printf '\e[H'
+}
+
+fig_ansi_cursor_move() {
+    printf '\e[{%s};{%s}H' "${1}" "${2}"
+}
+
+fig_ansi_cursor_move_up() {
+    printf '\e[%sA' "${1}"
+}
+
+fig_ansi_cursor_move_down() {
+    printf '\e[%sB' "${1}"
+}
+
+fig_ansi_cursor_move_right() {
+    printf '\e[%sC' "${1}"
+}
+
+fig_ansi_cursor_move_left() {
+    printf '\e[%sD' "${1}"
+}
+
+fig_ansi_cursor_get_position() {
+    printf '\e[6n'
+}
+
+fig_ansi_cursor_save() {
+    printf '\e 7'
+}
+
+fig_ansi_cursor_restore() {
+    printf '\e 8'
+}
+
+fig_ansi_erase_to_screen_end() {
+    printf '\e[0J'
+}
+
+fig_ansi_erase_to_screen_begin() {
+    printf '\e[1J'
+}
+
+fig_ansi_erase_screen() {
+    printf '\e[2J'
+}
+
+fig_ansi_erase_to_line_end() {
+    printf '\e[0K'
+}
+
+fig_ansi_erase_to_line_begin() {
+    printf '\e[1K'
+}
+
+fig_ansi_erase_line() {
+    printf '\e[2K'
+}
+
+fig_ansi_color_foreground() {
+    printf '\e[38;5;%sm' "${1:-0}"
+}
+
+fig_ansi_color_background() {
+    printf '\e[48;5;%sm' "${1:-0}"
+}
+
+fig_ansi_rgb_foreground() {
+    printf '\e[38;2;%s;%s;%sm' "${1:-0}" "${2:-0}" "${3:-0}"
+}
+
+fig_ansi_rgb_background() {
+    printf '\e[48;2;%s;%s;%sm' "${1:-0}" "${2:-0}" "${3:-0}"
+}
+
+fig_ansi_style_bold() {
+    printf '\e[1m'
+}
+
+fig_ansi_style_dim() {
+    printf '\e[2m'
+}
+
+fig_ansi_style_italic() {
+    printf '\e[3m'
+}
+
+fig_ansi_style_underline() {
+    printf '\e[4m'
+}
+
+fig_ansi_style_blink() {
+    printf '\e[5m'
+}
+
+fig_ansi_style_inverse() {
+    printf '\e[7m'
+}
+
+fig_ansi_style_invisible() {
+    printf '\e[8m'
+}
+
+fig_ansi_style_strike() {
+    printf '\e[9m'
+}
+
+fig_ansi_style_reset_bold() {
+    printf '\e[22m'
+}
+
+fig_ansi_style_reset_dim() {
+    printf '\e[22m'
+}
+
+fig_ansi_style_reset_italic() {
+    printf '\e[23m'
+}
+
+fig_ansi_style_reset_underline() {
+    printf '\e[24m'
+}
+
+fig_ansi_style_reset_blink() {
+    printf '\e[25m'
+}
+
+fig_ansi_style_reset_inverse() {
+    printf '\e[27m'
+}
+
+fig_ansi_style_reset_invisible() {
+    printf '\e[28m'
+}
+
+fig_ansi_style_reset_strike() {
+    printf '\e[29m'
+}
+
+fig_ansi_style_reset() {
+    printf '\e[0m'
+}
+
+fig_export_ansi() {
+    fig_export fig_ansi_cursor_hide
+    fig_export fig_ansi_cursor_show
+    fig_export fig_ansi_cursor_home
+    fig_export fig_ansi_cursor_move
+    fig_export fig_ansi_cursor_move_up
+    fig_export fig_ansi_cursor_move_down
+    fig_export fig_ansi_cursor_move_right
+    fig_export fig_ansi_cursor_move_left
+    fig_export fig_ansi_cursor_get_position
+    fig_export fig_ansi_cursor_save
+    fig_export fig_ansi_cursor_restore
+    fig_export fig_ansi_erase_to_screen_end
+    fig_export fig_ansi_erase_to_screen_begin
+    fig_export fig_ansi_erase_screen
+    fig_export fig_ansi_erase_to_line_end
+    fig_export fig_ansi_erase_to_line_begin
+    fig_export fig_ansi_erase_line
+    fig_export fig_ansi_color_foreground
+    fig_export fig_ansi_color_background
+    fig_export fig_ansi_rgb_foreground
+    fig_export fig_ansi_rgb_background
+    fig_export fig_ansi_style_bold
+    fig_export fig_ansi_style_dim
+    fig_export fig_ansi_style_italic
+    fig_export fig_ansi_style_underline
+    fig_export fig_ansi_style_blink
+    fig_export fig_ansi_style_inverse
+    fig_export fig_ansi_style_invisible
+    fig_export fig_ansi_style_strike
+    fig_export fig_ansi_style_reset_bold
+    fig_export fig_ansi_style_reset_dim
+    fig_export fig_ansi_style_reset_italic
+    fig_export fig_ansi_style_reset_underline
+    fig_export fig_ansi_style_reset_blink
+    fig_export fig_ansi_style_reset_inverse
+    fig_export fig_ansi_style_reset_invisible
+    fig_export fig_ansi_style_reset_strike
+    fig_export fig_ansi_style_reset
+}
+
+###############################################################################
+# PROGRESS
+###############################################################################
+
+fig_progress() {
+    local CURRENT TOTAL PERCENT NUM_CHRS WIDTH i STRING MESSAGE STYLE MESSAGE_LEN
+    local SEPERATOR SEPERATOR_LEN
+    CURRENT="${1}"
+    TOTAL="${2}"
+    MESSAGE="${3}"
+    WIDTH="${COLUMNS:-80}"
+    PERCENT=$((CURRENT * 100 / TOTAL))
+    STYLE="${FIG_PROGRESS_STYLE:-1}"
+    SEPERATOR='  '
+
+    if [[ "${STYLE}" =~ [^0-4] ]] ; then
+        STYLE="1"
+    fi
+
+    case "${STYLE}" in
+        0)
+            MESSAGE=''
+            SEPERATOR=''
+            ;;
+        1|2)
+            if [ -z "${MESSAGE}" ] ; then
+                local TOTAL_WIDTH FMT
+                TOTAL_WIDTH="$(echo "${TOTAL}" | wc --chars)"
+                FMT="%${TOTAL_WIDTH}s/%s (%3d%%)"
+                # shellcheck disable=SC2059
+                MESSAGE="$(printf "${FMT}" "${CURRENT}" "${TOTAL}" "${PERCENT}")"
+            fi
+            ;;
+        3|4)
+            MESSAGE="$(printf '%3d%%' "${PERCENT}")"
+            ;;
+    esac
+
+    MESSAGE_LEN="$(echo "${MESSAGE}" | wc --chars)"
+    SEPERATOR_LEN="$(echo "${SEPERATOR}" | wc --chars)"
+
+    if [ "$((WIDTH - MESSAGE_LEN - SEPERATOR_LEN))" -lt 10 ] ; then
+        STYLE='0'
+        SEPERATOR=''
+        SEPERATOR_LEN='0'
+        MESSAGE=''
+        MESSAGE_LEN='0'
+    fi
+
+    WIDTH=$((WIDTH - MESSAGE_LEN - SEPERATOR_LEN))
+    NUM_CHRS=$((PERCENT * WIDTH / 100))
+
+    local CHAR_BEGIN CHAR_END CHAR_FILL CHAR_EMPTY
+    CHAR_BEGIN="${FIG_PROGRESS_CHAR_BEGIN:-[}"
+    CHAR_END="${FIG_PROGRESS_CHAR_END:-]}"
+    CHAR_FILL="${FIG_PROGRESS_CHAR_FILL:-=}"
+    CHAR_EMPTY="${FIG_PROGRESS_CHAR_EMPTY:- }"
+
+    local COLOR_BAR COLOR_MESSAGE
+    COLOR_BAR="${FIG_PROGRESS_COLOR_BAR}"
+    COLOR_MESSAGE="${FIG_PROGRESS_COLOR_MESSAGE}"
+
+    MESSAGE="${COLOR_MESSAGE}${MESSAGE}$(fig_ansi_style_reset)"
+
+    STRING="${COLOR_BAR}"
+    STRING+="${CHAR_BEGIN}"
+
+    for ((i = 0; i < NUM_CHRS; i++)) ; do
+        STRING+="${CHAR_FILL}"
+    done
+    for ((i = NUM_CHRS; i < WIDTH; i++)) ; do
+        STRING+="${CHAR_EMPTY}"
+    done
+
+    STRING+="${CHAR_END}"
+    STRING+="$(fig_ansi_style_reset)"
+
+    case "${STYLE}" in
+        0)
+            printf "\r%s" "${STRING}"
+            ;;
+        1|3)
+            printf "\r%s%s%s" "${STRING}" "${SEPERATOR}" "${MESSAGE}"
+            ;;
+        2|4)
+            printf "\r%s%s%s" "${MESSAGE}" "${SEPERATOR}" "${STRING}"
+            ;;
+    esac
+
+    if [ "${PERCENT}" -eq 100 ] ; then
+        echo
+    fi
+}
+
+fig_export_progress() {
+    fig_export_ansi
+    fig_export fig_progress
+}
+
+###############################################################################
+# CORE (run)
+###############################################################################
 
 fig_assert sed
 

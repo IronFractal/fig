@@ -1,0 +1,20 @@
+#!/usr/bin/env fig.sh
+OUTDIR="${1:-.}"
+
+main() {
+    FIG_PROGRESS_COLOR_BAR="$(fig_ansi_color_foreground 4)"
+    FIG_PROGRESS_CHAR_FILL='|'
+    FIG_PROGRESS_CHAR_EMPTY='.'
+    FIG_PROGRESS_STYLE='1'
+
+    local i
+    for ((i=0;i<243;i++)) ; do
+        fig_progress $((i+1)) 243
+        sleep 0.01
+    done
+}
+
+fig_export_progress
+
+fig_generate "${OUTDIR}/progress.sh"
+

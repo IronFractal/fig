@@ -4,7 +4,8 @@ OUTDIR=build/
 
 SCRIPTS=simple \
         example \
-        non_path
+        non_path \
+        progress
 
 SCRIPTS:=$(patsubst %,$(OUTDIR)%.sh,$(SCRIPTS))
 
@@ -19,5 +20,5 @@ $(OUTDIR)%.sh: $(SRCDIR)%.fig
 
 .PHONY: clean
 clean:
->@rm --verbose $(SCRIPTS)
+>@rm --force --verbose $(SCRIPTS)
 
