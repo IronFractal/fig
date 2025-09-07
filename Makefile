@@ -16,7 +16,7 @@ $(OUTDIR).gitignore:
 
 $(OUTDIR)%.sh: $(SRCDIR)%.fig
 >@echo "[GEN]: $@"
->@PATH="$$(pwd):$${PATH}" ./$^ "$$(pwd)/build"
+>@PATH="$$(pwd):$${PATH}" FIG_ALLOW_OVERWRITE=true ./$^ "$$(pwd)/build"
 
 .PHONY: clean
 clean:

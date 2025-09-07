@@ -89,7 +89,7 @@ fig_generate() {
     if [ -z "${SCRIPT_NAME}" ] ; then
         fig_log_err "configure script name cannot be empty!"
         return 1
-    elif [ -e "${SCRIPT_PATH}" ] ; then
+    elif [ -e "${SCRIPT_PATH}" ] && ! "${FIG_ALLOW_OVERWRITE:-false}" ; then
         fig_log_err "cannot overwrite existing file '${SCRIPT_PATH}'!"
         return 1
     fi
