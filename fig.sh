@@ -471,48 +471,62 @@ EOF
 # ANSI
 ###############################################################################
 
+fig_ansi_term_width() {
+    tput cols
+}
+
+fig_ansi_term_height() {
+    tput lines
+}
+
+fig_ansi_term_colors() {
+    tput colors
+}
+
 fig_ansi_cursor_hide() {
-    printf '\e[?25l'
+    tput civis
 }
 
 fig_ansi_cursor_show() {
-    printf '\e[?25h'
+    tput cnorm
 }
 
 fig_ansi_cursor_home() {
-    printf '\e[H'
+    tput home
 }
 
 fig_ansi_cursor_move() {
-    printf '\e[{%s};{%s}H' "${1}" "${2}"
+    tput cup "${1}" "${2}"
 }
 
 fig_ansi_cursor_move_up() {
-    printf '\e[%sA' "${1}"
+    while [ -n "${1}" ] && [ "${1}" -gt "0" ] ; do
+        tput cuu1
+        $((1--))
+    done
 }
 
 fig_ansi_cursor_move_down() {
-    printf '\e[%sB' "${1}"
+    while [ -n "${1}" ] && [ "${1}" -gt "0" ] ; do
+        tput cud1
+        $((1--))
+    done
 }
 
 fig_ansi_cursor_move_right() {
-    printf '\e[%sC' "${1}"
+    tput cuf "${1:-1}"
 }
 
 fig_ansi_cursor_move_left() {
-    printf '\e[%sD' "${1}"
-}
-
-fig_ansi_cursor_get_position() {
-    printf '\e[6n'
+    tput cub "${1:-1}"
 }
 
 fig_ansi_cursor_save() {
-    printf '\e 7'
+    tput sc
 }
 
 fig_ansi_cursor_restore() {
-    printf '\e 8'
+    tput rc
 }
 
 fig_ansi_erase_to_screen_end() {
@@ -524,15 +538,15 @@ fig_ansi_erase_to_screen_begin() {
 }
 
 fig_ansi_erase_screen() {
-    printf '\e[2J'
+    tput clear
 }
 
 fig_ansi_erase_to_line_end() {
-    printf '\e[0K'
+    tput el
 }
 
 fig_ansi_erase_to_line_begin() {
-    printf '\e[1K'
+    tput el1
 }
 
 fig_ansi_erase_line() {
@@ -540,11 +554,27 @@ fig_ansi_erase_line() {
 }
 
 fig_ansi_color_foreground() {
-    printf '\e[38;5;%sm' "${1:-0}"
+    tput setaf "${1:-0}"
 }
 
 fig_ansi_color_background() {
-    printf '\e[48;5;%sm' "${1:-0}"
+    tput setab "${1:-0}"
+}
+
+fig_ansi_color_clear_background() {
+    if tput bce ; then
+        clear
+    else
+        local blank_screen i term_width term_height
+        term_width="$(tput cols)"
+        term_height="$(tput lines)"
+        blank_screen=""
+        for ((i=0; i < (term_width * term_height); i++)) ; do
+            blank_screen+=" "
+        done
+        tput home
+        echo -n "${blank_screen}"
+    fi
 }
 
 fig_ansi_rgb_foreground() {
@@ -556,23 +586,23 @@ fig_ansi_rgb_background() {
 }
 
 fig_ansi_style_bold() {
-    printf '\e[1m'
+    tput bold
 }
 
 fig_ansi_style_dim() {
-    printf '\e[2m'
+    tput dim
 }
 
 fig_ansi_style_italic() {
-    printf '\e[3m'
+    tput sitm
 }
 
 fig_ansi_style_underline() {
-    printf '\e[4m'
+    tput smul
 }
 
 fig_ansi_style_blink() {
-    printf '\e[5m'
+    tput blink
 }
 
 fig_ansi_style_inverse() {
@@ -580,7 +610,7 @@ fig_ansi_style_inverse() {
 }
 
 fig_ansi_style_invisible() {
-    printf '\e[8m'
+    tput invis
 }
 
 fig_ansi_style_strike() {
@@ -596,11 +626,11 @@ fig_ansi_style_reset_dim() {
 }
 
 fig_ansi_style_reset_italic() {
-    printf '\e[23m'
+    tput ritm
 }
 
 fig_ansi_style_reset_underline() {
-    printf '\e[24m'
+    tput rmul
 }
 
 fig_ansi_style_reset_blink() {
@@ -620,10 +650,29 @@ fig_ansi_style_reset_strike() {
 }
 
 fig_ansi_style_reset() {
-    printf '\e[0m'
+    tput sgr0
+}
+
+fig_ansi_screen_save() {
+    tput smcup
+}
+
+fig_ansi_screen_restore() {
+    tput rmcup
+}
+
+fig_ansi_reset_all() {
+    (
+    tput sgr0
+    tput cnorm
+    tput rmcup
+    ) || clear
 }
 
 fig_export_ansi() {
+    fig_export fig_ansi_term_width
+    fig_export fig_ansi_term_height
+    fig_export fig_ansi_term_colors
     fig_export fig_ansi_cursor_hide
     fig_export fig_ansi_cursor_show
     fig_export fig_ansi_cursor_home
@@ -632,7 +681,6 @@ fig_export_ansi() {
     fig_export fig_ansi_cursor_move_down
     fig_export fig_ansi_cursor_move_right
     fig_export fig_ansi_cursor_move_left
-    fig_export fig_ansi_cursor_get_position
     fig_export fig_ansi_cursor_save
     fig_export fig_ansi_cursor_restore
     fig_export fig_ansi_erase_to_screen_end
@@ -643,6 +691,7 @@ fig_export_ansi() {
     fig_export fig_ansi_erase_line
     fig_export fig_ansi_color_foreground
     fig_export fig_ansi_color_background
+    fig_export fig_ansi_color_clear_background
     fig_export fig_ansi_rgb_foreground
     fig_export fig_ansi_rgb_background
     fig_export fig_ansi_style_bold
@@ -662,6 +711,9 @@ fig_export_ansi() {
     fig_export fig_ansi_style_reset_invisible
     fig_export fig_ansi_style_reset_strike
     fig_export fig_ansi_style_reset
+    fig_export fig_ansi_screen_save
+    fig_export fig_ansi_screen_restore
+    fig_export fig_ansi_reset_all
 }
 
 ###############################################################################

@@ -1,0 +1,34 @@
+#!/usr/bin/env fig.sh
+OUTDIR="${1:-.}"
+
+draw() {
+    local term_width term_height
+
+    term_width="$(fig_ansi_term_width)"
+    term_height="$(fig_ansi_term_height)"
+
+    fig_ansi_cursor_hide
+    fig_ansi_rgb_background 100 100 100
+    fig_ansi_color_clear_background
+
+    fig_ansi_cursor_move $((term_width/2)) $((term_height/2))
+
+    echo 'Hello World!!'
+}
+
+main() {
+    trap "fig_ansi_reset_all" SIGINT EXIT
+    while : ; do
+        draw
+        sleep 1
+    done
+}
+
+fig_export draw
+
+fig_export fig_log
+fig_export fig_log
+fig_export_ansi
+
+fig_generate "${OUTDIR}/draw.sh"
+

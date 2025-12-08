@@ -2,7 +2,8 @@
 SRCDIR=examples/
 OUTDIR=build/
 
-SCRIPTS=simple \
+SCRIPTS=draw \
+        simple \
         example \
         posargs \
         non_path \
