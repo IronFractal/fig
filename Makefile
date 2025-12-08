@@ -4,6 +4,7 @@ OUTDIR=build/
 
 SCRIPTS=simple \
         example \
+        posargs \
         non_path \
         progress
 

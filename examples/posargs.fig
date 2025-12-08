@@ -1,0 +1,41 @@
+#!/usr/bin/env fig.sh
+OUTDIR="${1:-.}"
+
+fig_parser_begin "main"
+fig_parser_add_opt option "t,test" "Just a test flag Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+fig_parser_add_pos_arg "ONE=hello"
+fig_parser_add_pos_arg "TWO=world" "Test positional argument 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789"
+fig_parser_add_pos_arg "THREE"
+fig_parser_end
+
+main() {
+    parse_opts_main $@
+
+    fig_log "ONE"
+    fig_log "   set: ${OPT_main_pos_ONE_set}"
+    fig_log " value: ${OPT_main_pos_ONE}"
+    fig_log ""
+
+    fig_log "TWO"
+    fig_log "   set: ${OPT_main_pos_TWO_set}"
+    fig_log " value: ${OPT_main_pos_TWO}"
+    fig_log ""
+
+    fig_log "THREE"
+    fig_log "   set: ${OPT_main_pos_THREE_set}"
+    fig_log " value: ${OPT_main_pos_THREE}"
+    fig_log ""
+
+
+    if ${OPT_main_test_set} ; then
+        fig_log "Test is set!!"
+    else
+        fig_log "Test is not set!!"
+    fi
+}
+
+fig_export fig_log
+fig_export fig_log
+
+fig_generate "${OUTDIR}/posargs.sh"
+

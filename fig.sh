@@ -160,10 +160,16 @@ __FIG_PARSER=""
 __FIG_PARSER_SHORT=""
 __FIG_PARSER_LONG=""
 __FIG_PARSER_ENV=false
+__FIG_PARSER_ENV_DEFAULTS=""
 __FIG_PARSER_USAGE=true
+__FIG_PARSER_POS_ARGS=false
+__FIG_PARSER_POS_ARGS_NAMES=""
 __FIG_PARSER_DESC=""
+__FIG_PARSER_PRE=""
+__FIG_PARSER_CASE=""
 __FIG_PARSER_HELP=""
 __FIG_PARSER_HELP_ENV=""
+__FIG_PARSER_HELP_POS=""
 
 fig_parser_begin() {
     fig_assert fold
@@ -175,6 +181,8 @@ fig_parser_begin() {
     __FIG_PARSER_ENV=false
     __FIG_PARSER_ENV_DEFAULTS=""
     __FIG_PARSER_USAGE=true
+    __FIG_PARSER_POS_ARGS=false
+    __FIG_PARSER_POS_ARGS_NAMES=""
     __FIG_PARSER_DESC=""
     __FIG_PARSER_PRE=""
     __FIG_PARSER_CASE=""
@@ -185,6 +193,8 @@ fig_parser_begin() {
     __FIG_PARSER_HELP_ENV='
 Environment:
 '
+    __FIG_PARSER_HELP_POS='
+Positional Arguments:'
 }
 
 fig_parser_enable_usage() {
@@ -329,6 +339,34 @@ $(echo "${DESC}" | fold -w 76 -s - | sed 's/[[:space:]]*$//' | sed 's/^/    /')
 "
 }
 
+fig_parser_add_pos_arg() {
+    local NAME DEFAULT DESC
+    NAME="$(echo "${1}" | awk -F '=' '{print $1}')"
+    DEFAULT="$(echo "${1}" | awk -F '=' '{print $2}')"
+    DESC="${2}"
+
+    __FIG_PARSER_POS_ARGS=true
+    __FIG_PARSER_POS_ARGS_NAMES+=" ${NAME} "
+    __FIG_PARSER_PRE+=$(cat <<EOF
+OPT_${__FIG_PARSER}_pos_${NAME}_set=false
+OPT_${__FIG_PARSER}_pos_${NAME}="${DEFAULT}"
+EOF
+    )
+    __FIG_PARSER_PRE+=$'\n'
+    if [ -n "${DEFAULT}" ] ; then
+        DEFAULT=" (default: ${DEFAULT})"
+    fi
+    if [ -n "${DESC}" ] ; then
+        DESC="$(echo "${DESC}" | fold -w 76 -s - | sed 's/[[:space:]]*$//' | sed 's/^/    /')"
+    fi
+    __FIG_PARSER_HELP_POS+=$'\n'
+    __FIG_PARSER_HELP_POS+=$(cat <<EOF
+  ${NAME}${DEFAULT}
+${DESC}
+EOF
+    )
+}
+
 fig_parser_end() {
      if [ -z "${__FIG_PARSER}" ] ; then
         fig_log_err "no active parser, did you forget to call fig_parser_begin!"
@@ -353,6 +391,9 @@ print_help_${__FIG_PARSER} ()
     if ${__FIG_PARSER_ENV} ; then
         __FIG_SCRIPT+="
 ${__FIG_PARSER_HELP_ENV//^\n$/}"
+    fi
+    if ${__FIG_PARSER_POS_ARGS} ; then
+        __FIG_SCRIPT+="${__FIG_PARSER_HELP_POS//^\n$/}"
     fi
     __FIG_SCRIPT+="\"
 }
@@ -391,12 +432,39 @@ $(echo "${__FIG_PARSER_CASE}" | sed 's/^/            /' | sed 's/^[[:space:]]*$/
         esac
     done
 
-    if [ -n \"\${1}\" ] ; then
-        fig_log_err \"unhandled positional arguments!\"
+"
+    if ! "${__FIG_PARSER_POS_ARGS}" ; then
+        __FIG_SCRIPT+=$(cat <<EOF
+    if [ -n "\${1}" ] ; then
+        fig_log_err "unhandled positional arguments!"
         return 1
     fi
 }
-"
+EOF
+        )
+    else
+        for POSARG in ${__FIG_PARSER_POS_ARGS_NAMES} ; do
+            __FIG_SCRIPT+=$(cat <<EOF
+    if [ -n "\${1}" ] ; then
+        OPT_${__FIG_PARSER}_pos_${POSARG}_set=true
+        OPT_${__FIG_PARSER}_pos_${POSARG}="\${1}"
+        shift
+    fi
+EOF
+            )
+            __FIG_SCRIPT+=$'\n'
+        done
+        __FIG_SCRIPT+=$(cat <<EOF
+    if [ -n "\${1}" ] ; then
+        fig_log_err "extra positional arguments provided!"
+        return 1
+    fi
+}
+EOF
+        )
+    fi
+
+    __FIG_SCRIPT+=$'\n'
 }
 
 ###############################################################################
