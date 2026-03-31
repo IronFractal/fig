@@ -1,0 +1,315 @@
+###############################################################################
+# ARG PARSING
+###############################################################################
+
+__FIG_PARSER=""
+__FIG_PARSER_SHORT=""
+__FIG_PARSER_LONG=""
+__FIG_PARSER_ENV=false
+__FIG_PARSER_ENV_DEFAULTS=""
+__FIG_PARSER_USAGE=true
+__FIG_PARSER_POS_ARGS=false
+__FIG_PARSER_POS_ARGS_NAMES=""
+__FIG_PARSER_DESC=""
+__FIG_PARSER_PRE=""
+__FIG_PARSER_CASE=""
+__FIG_PARSER_HELP=""
+__FIG_PARSER_HELP_ENV=""
+__FIG_PARSER_HELP_POS=""
+
+fig_parser_begin() {
+    fig_assert fold
+    fig_assert getopt
+
+    __FIG_PARSER="${1}"
+    __FIG_PARSER_SHORT="h"
+    __FIG_PARSER_LONG="help,"
+    __FIG_PARSER_ENV=false
+    __FIG_PARSER_ENV_DEFAULTS=""
+    __FIG_PARSER_USAGE=true
+    __FIG_PARSER_POS_ARGS=false
+    __FIG_PARSER_POS_ARGS_NAMES=""
+    __FIG_PARSER_DESC=""
+    __FIG_PARSER_PRE=""
+    __FIG_PARSER_CASE=""
+    __FIG_PARSER_HELP='Options:
+  -h, --help
+    Print this help information
+'
+    __FIG_PARSER_HELP_ENV='
+Environment:
+'
+    __FIG_PARSER_HELP_POS='
+Positional Arguments:'
+}
+
+fig_parser_enable_usage() {
+    if ${1} ; then
+        __FIG_PARSER_USAGE=true
+    else
+        __FIG_PARSER_USAGE=false
+    fi
+}
+
+fig_parser_set_description() {
+    __FIG_PARSER_DESC="${1}"
+}
+
+fig_parser_add_opt() {
+    if [ -z "${__FIG_PARSER}" ] ; then
+        fig_log_err "no active parser, did you forget to call fig_parser_begin!"
+        return 1
+    fi
+    local TYPE ARG VALUE DEFAULT FLAGS SHORT LONG SHORT_US LONG_US PRIMARY \
+          DESC CASE SHIFT HELP GETOPTARG
+    TYPE="${1}"
+    ARG="none"
+    VALUE=""
+    DEFAULT="$(echo "${2}" | tr '=' ' ' | awk '{print $2}')"
+    FLAGS="$(echo "${2}" | tr '=' ' ' | awk '{print $1}')"
+    SHORT="$(echo "${FLAGS}" | tr ',' ' ' | awk '{print $1}')"
+    LONG="$(echo "${FLAGS}" | tr ',' ' ' | awk '{print $2}')"
+    SHORT_US="$(echo "${SHORT}" | tr '-' '_')"
+    LONG_US="$(echo "${LONG}" | tr '-' '_')"
+    PRIMARY="${LONG_US}"
+    DESC="${3}"
+    CASE=""
+    SHIFT=""
+    HELP="  "
+    GETOPTARG=""
+
+    if [ "$(echo -n "${SHORT}" | wc -c)" -gt 1 ] ; then
+        if [ -n "${LONG}" ] ; then
+            fig_log_err "invalid short option '${SHORT}' provided!"
+            return 1
+        fi
+        LONG="${SHORT}"
+        LONG_US="${SHORT_US}"
+        PRIMARY="${SHORT_US}"
+        SHORT=""
+        SHORT_US=""
+    fi
+
+    if [ -z "${LONG_US}" ] ; then
+        PRIMARY="${SHORT_US}"
+    fi
+
+    case "${TYPE}" in
+        flag)
+            VALUE="=true"
+            DEFAULT="false"
+            ;;
+        option)
+            ARG="required"
+            VALUE="=\"\${2}\""
+            DEFAULT="\"${DEFAULT:-""}\""
+            ;;
+        array)
+            ARG="required"
+            VALUE="+=\" \${2} \""
+            DEFAULT="\"${DEFAULT:-""}\""
+            ;;
+        *)
+            fig_log_err "unknown option type '${TYPE}'!"
+            return 1
+            ;;
+    esac
+
+    case "${ARG}" in
+        none)
+            ;;
+        required)
+            GETOPTARG=":"
+            SHIFT=" 2"
+            ;;
+        optional)
+            GETOPTARG="::"
+            SHIFT=" 2"
+            ;;
+    esac
+
+    if [ -n "${SHORT}" ] ; then
+        __FIG_PARSER_SHORT+="${SHORT}${GETOPTARG}"
+        CASE="-${SHORT}"
+        HELP+="-${SHORT}"
+    fi
+    if [ -n "${LONG}" ] ; then
+        __FIG_PARSER_LONG+="${LONG}${GETOPTARG},"
+        if [ -n "${SHORT}" ] ; then
+            CASE+="|"
+            HELP+=", "
+        fi
+        CASE+="--${LONG}"
+        HELP+="--${LONG}"
+    fi
+
+    if [ "${ARG}" == "required" ] ; then
+        HELP+=" <argument>"
+    elif [ "${ARG}" == "optional" ] ; then
+        HELP+=" [argument]"
+    fi
+
+    __FIG_PARSER_HELP+="${HELP}
+$(echo "${DESC}" | fold -w 76 -s - | sed 's/[[:space:]]*$//' | sed 's/^/    /')
+"
+
+    __FIG_PARSER_PRE+="OPT_${__FIG_PARSER}_${PRIMARY}_set=false
+OPT_${__FIG_PARSER}_${PRIMARY}=${DEFAULT}
+"
+
+    __FIG_PARSER_CASE+="${CASE})
+    OPT_${__FIG_PARSER}_${PRIMARY}_set=true
+    OPT_${__FIG_PARSER}_${PRIMARY}${VALUE}
+    shift${SHIFT}
+    ;;
+"
+}
+
+fig_parser_add_env() {
+    local NAME DEFAULT DESC HELP
+    NAME="$(echo "${1}" | tr '=' ' ' | awk '{print $1}')"
+    DEFAULT="$(echo "${1}" | tr '=' ' ' | awk '{print $2}')"
+    DESC="${2}"
+    HELP="<value>"
+
+    __FIG_PARSER_ENV=true
+
+    if [ -n "${DEFAULT}" ] ; then
+        HELP="[value] (default: \\\"${DEFAULT}\\\")"
+        __FIG_PARSER_ENV_DEFAULTS+="${NAME}=\"\${${NAME}:-\"${DEFAULT}\"}\"
+"
+    fi
+
+    __FIG_PARSER_HELP_ENV+="  ${NAME}=${HELP}
+$(echo "${DESC}" | fold -w 76 -s - | sed 's/[[:space:]]*$//' | sed 's/^/    /')
+"
+}
+
+fig_parser_add_pos_arg() {
+    local NAME DEFAULT DESC
+    NAME="$(echo "${1}" | awk -F '=' '{print $1}')"
+    DEFAULT="$(echo "${1}" | awk -F '=' '{print $2}')"
+    DESC="${2}"
+
+    __FIG_PARSER_POS_ARGS=true
+    __FIG_PARSER_POS_ARGS_NAMES+=" ${NAME} "
+    __FIG_PARSER_PRE+=$(cat <<EOF
+OPT_${__FIG_PARSER}_pos_${NAME}_set=false
+OPT_${__FIG_PARSER}_pos_${NAME}="${DEFAULT}"
+EOF
+    )
+    __FIG_PARSER_PRE+=$'\n'
+    if [ -n "${DEFAULT}" ] ; then
+        DEFAULT=" (default: ${DEFAULT})"
+    fi
+    if [ -n "${DESC}" ] ; then
+        DESC="$(echo "${DESC}" | fold -w 76 -s - | sed 's/[[:space:]]*$//' | sed 's/^/    /')"
+    fi
+    __FIG_PARSER_HELP_POS+=$'\n'
+    __FIG_PARSER_HELP_POS+=$(cat <<EOF
+  ${NAME}${DEFAULT}
+${DESC}
+EOF
+    )
+}
+
+fig_parser_end() {
+     if [ -z "${__FIG_PARSER}" ] ; then
+        fig_log_err "no active parser, did you forget to call fig_parser_begin!"
+        return 1
+    fi
+    __FIG_SCRIPT+="
+print_help_${__FIG_PARSER} ()
+{
+    echo \""
+    if ${__FIG_PARSER_USAGE} ; then
+        __FIG_SCRIPT+="Usage:
+  \${0} [options]
+
+"
+    fi
+    if [ -n "${__FIG_PARSER_DESC}" ] ; then
+        __FIG_SCRIPT+="    ${__FIG_PARSER_DESC}
+
+"
+    fi
+    __FIG_SCRIPT+="${__FIG_PARSER_HELP//^\n$/}"
+    if ${__FIG_PARSER_ENV} ; then
+        __FIG_SCRIPT+="
+${__FIG_PARSER_HELP_ENV//^\n$/}"
+    fi
+    if ${__FIG_PARSER_POS_ARGS} ; then
+        __FIG_SCRIPT+="${__FIG_PARSER_HELP_POS//^\n$/}"
+    fi
+    __FIG_SCRIPT+="\"
+}
+"
+    __FIG_SCRIPT+="
+parse_opts_${__FIG_PARSER} ()
+{
+    local ERR=\$(getopt -Q -o ${__FIG_PARSER_SHORT} --long ${__FIG_PARSER_LONG} -- \"\$@\" 2>&1)
+    local ARGS=\$(getopt -q -o ${__FIG_PARSER_SHORT} --long ${__FIG_PARSER_LONG} -- \"\$@\")
+    eval set -- \"\${ARGS}\"
+
+    if [ -n \"\${ERR}\" ] ; then
+        fig_log_err \"\$(echo \"\${ERR}\" | sed 's/getopt: //')\"
+        print_help_${__FIG_PARSER}
+        return 1
+    fi
+
+$(echo "${__FIG_PARSER_PRE}" | sed 's/^/    /' | sed 's/^[[:space:]]*$//' )
+
+    while true ; do
+        case \"\$1\" in
+            -h|--help)
+                print_help_${__FIG_PARSER}
+                exit 0
+                ;;
+$(echo "${__FIG_PARSER_CASE}" | sed 's/^/            /' | sed 's/^[[:space:]]*$//')
+            --)
+                shift
+                break
+                ;;
+            *)
+                fig_log_err \"unknown argument!\"
+                print_help_${__FIG_PARSER}
+                return 1
+                ;;
+        esac
+    done
+
+"
+    if ! "${__FIG_PARSER_POS_ARGS}" ; then
+        __FIG_SCRIPT+=$(cat <<EOF
+    if [ -n "\${1}" ] ; then
+        fig_log_err "unhandled positional arguments!"
+        return 1
+    fi
+}
+EOF
+        )
+    else
+        for POSARG in ${__FIG_PARSER_POS_ARGS_NAMES} ; do
+            __FIG_SCRIPT+=$(cat <<EOF
+    if [ -n "\${1}" ] ; then
+        OPT_${__FIG_PARSER}_pos_${POSARG}_set=true
+        OPT_${__FIG_PARSER}_pos_${POSARG}="\${1}"
+        shift
+    fi
+EOF
+            )
+            __FIG_SCRIPT+=$'\n'
+        done
+        __FIG_SCRIPT+=$(cat <<EOF
+    if [ -n "\${1}" ] ; then
+        fig_log_err "extra positional arguments provided!"
+        return 1
+    fi
+}
+EOF
+        )
+    fi
+
+    __FIG_SCRIPT+=$'\n'
+}
+

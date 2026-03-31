@@ -153,6 +153,19 @@ fig_assert_one_qq() {
 }
 
 ###############################################################################
+# CORE (run)
+###############################################################################
+
+fig_assert sed
+
+fig_export fig_log
+fig_export fig_log_err
+fig_export fig_assert
+fig_export fig_assert_qq
+fig_export fig_assert_one_q
+fig_export fig_assert_one_qq
+
+###############################################################################
 # ARG PARSING
 ###############################################################################
 
@@ -502,14 +515,14 @@ fig_ansi_cursor_move() {
 fig_ansi_cursor_move_up() {
     while [ -n "${1}" ] && [ "${1}" -gt "0" ] ; do
         tput cuu1
-        $((1--))
+        ((1--))
     done
 }
 
 fig_ansi_cursor_move_down() {
     while [ -n "${1}" ] && [ "${1}" -gt "0" ] ; do
         tput cud1
-        $((1--))
+        ((1--))
     done
 }
 
@@ -721,6 +734,8 @@ fig_export_ansi() {
 ###############################################################################
 
 fig_progress() {
+    fig_assert wc
+
     local CURRENT TOTAL PERCENT NUM_CHRS WIDTH i STRING MESSAGE STYLE MESSAGE_LEN
     local SEPERATOR SEPERATOR_LEN
     CURRENT="${1}"
@@ -815,19 +830,5 @@ fig_export_progress() {
     fig_export fig_progress
 }
 
-###############################################################################
-# CORE (run)
-###############################################################################
-
-fig_assert sed
-
-fig_export fig_log
-fig_export fig_log_err
-fig_export fig_assert
-fig_export fig_assert_qq
-fig_export fig_assert_one_q
-fig_export fig_assert_one_qq
-
 # shellcheck disable=SC1090
 . "${__FIG_SRC_SCRIPT}"
-
