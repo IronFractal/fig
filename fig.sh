@@ -120,7 +120,7 @@ $(declare -f "${1}" | sed 's/[[:space:]]*$//')
 }
 
 fig_assert() {
-    if ! which "${1}" &>/dev/null ; then
+    if ! command -v "${1}" &>/dev/null ; then
         fig_log_err "command '${1}' is not available!"
         return 1
     fi
