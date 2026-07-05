@@ -19,7 +19,6 @@ __FIG_PARSER_HELP_POS=""
 
 fig_parser_begin() {
     fig_assert fold
-    fig_assert getopt
 
     __FIG_PARSER="${1}"
     __FIG_PARSER_SHORT="h"
@@ -218,6 +217,35 @@ fig_parser_end() {
         fig_log_err "no active parser, did you forget to call fig_parser_begin!"
         return 1
     fi
+
+    __FIG_SCRIPT+='
+# pure-getopt, a drop-in replacement for GNU getopt in pure Bash.
+# version 1.4.5
+#
+# Copyright 2012-2021 Aron Griffis <aron@scampersand.com>
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+'
+
+    fig_export pure-getopt
+
     __FIG_SCRIPT+="
 print_help_${__FIG_PARSER} ()
 {
@@ -247,8 +275,8 @@ ${__FIG_PARSER_HELP_ENV//^\n$/}"
     __FIG_SCRIPT+="
 parse_opts_${__FIG_PARSER} ()
 {
-    local ERR=\$(getopt -Q -o ${__FIG_PARSER_SHORT} --long ${__FIG_PARSER_LONG} -- \"\$@\" 2>&1)
-    local ARGS=\$(getopt -q -o ${__FIG_PARSER_SHORT} --long ${__FIG_PARSER_LONG} -- \"\$@\")
+    local ERR=\$(pure-getopt -Q -o ${__FIG_PARSER_SHORT} --long ${__FIG_PARSER_LONG} -- \"\$@\" 2>&1)
+    local ARGS=\$(pure-getopt -q -o ${__FIG_PARSER_SHORT} --long ${__FIG_PARSER_LONG} -- \"\$@\")
     eval set -- \"\${ARGS}\"
 
     if [ -n \"\${ERR}\" ] ; then

@@ -49,6 +49,7 @@ __FIG_SRC_SCRIPT="${1}"
 shift
 
 #{{core}}
+#{{pure-getopt}}
 #{{arg}}
 #{{ansi}}
 #{{progress}}
