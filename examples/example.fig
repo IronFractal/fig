@@ -14,7 +14,6 @@ main() {
     fig_assert "meson"
 
     #echo "Source: ${SRC_DIR}"
-    #echo "Source: ${SRC_DIR_RELATIVE}"
     #echo "Build: ${BUILD_DIR}"
     #echo ${@}
 

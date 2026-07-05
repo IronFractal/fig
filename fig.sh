@@ -60,7 +60,6 @@ __FIG_SCRIPT="#!/bin/bash
 set -e
 
 SRC_DIR=\"\$(cd -- \"\$(dirname -- \"\${BASH_SOURCE[0]}\")\" &> /dev/null && pwd)\"
-SRC_DIR_RELATIVE=\"\$(realpath --relative-to=\$(pwd) \"\${SRC_DIR}\")\"
 BUILD_DIR=\"\$(pwd)\"
 "
 __FIG_EXPORTED=""
